@@ -1814,6 +1814,8 @@ public:
     return 0;
   }
 
+  virtual string get_type() = 0;
+
   // mgmt
   virtual bool test_mount_in_use() = 0;
   virtual int mount() = 0;
