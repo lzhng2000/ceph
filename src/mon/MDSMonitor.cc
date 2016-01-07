@@ -1041,7 +1041,7 @@ bool MDSMonitor::preprocess_command(MonOpRequestRef op)
   } else if (prefix == "fs get") {
     string fs_name;
     cmd_getval(g_ceph_context, cmdmap, "fs_name", fs_name);
-    auto fs = pending_fsmap.get_filesystem(fs_name);
+    auto fs = fsmap.get_filesystem(fs_name);
     if (fs == nullptr) {
       ss << "filesystem '" << fs_name << "' not found";
       r = -ENOENT;
