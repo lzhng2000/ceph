@@ -43,6 +43,9 @@ struct PGLog : DoutPrefixProvider {
       const pg_log_entry_t &entry) = 0;
     virtual void remove(
       const hobject_t &hoid) = 0;
+    virtual void try_stash(
+      const hobject_t &entry,
+      version_t v) = 0;
     virtual void trim(
       const pg_log_entry_t &entry) = 0;
     virtual ~LogEntryHandler() {}
@@ -194,6 +197,13 @@ struct PGLog : DoutPrefixProvider {
       }
     }
 
+    void reset_rollback_info_trimmed_to_riter() {
+      rollback_info_trimmed_to_riter = log.rbegin();
+      while (rollback_info_trimmed_to_riter != log.rend() &&
+	     rollback_info_trimmed_to_riter->version > rollback_info_trimmed_to)
+	++rollback_info_trimmed_to_riter;
+    }
+
     void index() {
       objects.clear();
       caller_ops.clear();
@@ -214,10 +224,7 @@ struct PGLog : DoutPrefixProvider {
 	}
       }
 
-      rollback_info_trimmed_to_riter = log.rbegin();
-      while (rollback_info_trimmed_to_riter != log.rend() &&
-	     rollback_info_trimmed_to_riter->version > rollback_info_trimmed_to)
-	++rollback_info_trimmed_to_riter;
+      reset_rollback_info_trimmed_to_riter();
     }
 
     void index(pg_log_entry_t& e) {
@@ -662,6 +669,7 @@ public:
 
   static void append_log_entries_update_missing(
     const hobject_t &last_backfill,
+    bool last_backfill_bitwise,
     const list<pg_log_entry_t> &entries,
     IndexedLog *log,
     pg_missing_t &missing,
@@ -669,15 +677,20 @@ public:
     const DoutPrefixProvider *dpp);
   void append_new_log_entries(
     const hobject_t &last_backfill,
+    bool last_backfill_bitwise,
     const list<pg_log_entry_t> &entries,
     LogEntryHandler *rollbacker) {
     append_log_entries_update_missing(
       last_backfill,
+      last_backfill_bitwise,
       entries,
       &log,
       missing,
       rollbacker,
       this);
+    if (!entries.empty()) {
+      mark_writeout_from(entries.begin()->version);
+    }
   }
 
   void write_log(ObjectStore::Transaction& t,
