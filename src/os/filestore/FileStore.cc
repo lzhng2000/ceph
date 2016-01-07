@@ -2656,6 +2656,22 @@ unsigned FileStore::_do_transaction(
       }
       break;
 
+    case Transaction::OP_TRY_COLL_MOVE_RENAME:
+      {
+        coll_t oldcid = i.get_cid(op->cid);
+        ghobject_t oldoid = i.get_oid(op->oid);
+        coll_t newcid = i.get_cid(op->dest_cid);
+        ghobject_t newoid = i.get_oid(op->dest_oid);
+	_kludge_temp_object_collection(oldcid, oldoid);
+	_kludge_temp_object_collection(newcid, newoid);
+        tracepoint(objectstore, coll_move_rename_enter);
+        r = _collection_move_rename(oldcid, oldoid, newcid, newoid, spos);
+	if (r == -ENOENT)
+	  r = 0;
+        tracepoint(objectstore, coll_move_rename_exit, r);
+      }
+      break;
+
     case Transaction::OP_COLL_SETATTR:
       {
         coll_t cid = i.get_cid(op->cid);
