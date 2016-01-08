@@ -5126,7 +5126,7 @@ int FileStore::_collection_move_rename(coll_t oldcid, const ghobject_t& oldoid,
       if (replaying) {
 	dout(10) << __func__ << " " << c << "/" << o << " from "
 		 << oldcid << "/" << oldoid << " (dne, continue replay) " << dendl;
-      } else {
+      } else if (allow_enoent) {
 	dout(10) << __func__ << " " << c << "/" << o << " from "
 		 << oldcid << "/" << oldoid << " (dne, ignoring enoent)"
 		 << dendl;
