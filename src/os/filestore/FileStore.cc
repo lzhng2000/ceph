@@ -2665,9 +2665,7 @@ unsigned FileStore::_do_transaction(
 	_kludge_temp_object_collection(oldcid, oldoid);
 	_kludge_temp_object_collection(newcid, newoid);
         tracepoint(objectstore, coll_move_rename_enter);
-        r = _collection_move_rename(oldcid, oldoid, newcid, newoid, spos);
-	if (r == -ENOENT)
-	  r = 0;
+        r = _collection_move_rename(oldcid, oldoid, newcid, newoid, spos, true);
         tracepoint(objectstore, coll_move_rename_exit, r);
       }
       break;
@@ -5092,7 +5090,8 @@ int FileStore::_collection_add(coll_t c, coll_t oldcid, const ghobject_t& o,
 
 int FileStore::_collection_move_rename(coll_t oldcid, const ghobject_t& oldoid,
 				       coll_t c, const ghobject_t& o,
-				       const SequencerPosition& spos)
+				       const SequencerPosition& spos,
+				       bool allow_enoent)
 {
   dout(15) << __func__ << " " << c << "/" << o << " from " << oldcid << "/" << oldoid << dendl;
   int r = 0;
@@ -5124,9 +5123,16 @@ int FileStore::_collection_move_rename(coll_t oldcid, const ghobject_t& oldoid,
     if (r < 0) {
       // the source collection/object does not exist. If we are replaying, we
       // should be safe, so just return 0 and move on.
-      assert(replaying);
-      dout(10) << __func__ << " " << c << "/" << o << " from "
-	       << oldcid << "/" << oldoid << " (dne, continue replay) " << dendl;
+      if (replaying) {
+	dout(10) << __func__ << " " << c << "/" << o << " from "
+		 << oldcid << "/" << oldoid << " (dne, continue replay) " << dendl;
+      } else {
+	dout(10) << __func__ << " " << c << "/" << o << " from "
+		 << oldcid << "/" << oldoid << " (dne, ignoring enoent)"
+		 << dendl;
+      } else {
+	assert(0 == "ERROR: source must exist");
+      }
       return 0;
     }
     if (dstcmp > 0) {      // if dstcmp == 0 the guard already says "in-progress"

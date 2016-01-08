@@ -4540,6 +4540,7 @@ void PG::share_new_log_entries(
     assert(peer_info.count(peer));
     pg_missing_t& pmissing(peer_missing[peer]);
     pg_info_t& pinfo(peer_info[peer]);
+    eversion_t old_last_update = pinfo.last_update;
     PGLog::append_log_entries_update_missing(
       pinfo.last_backfill,
       info.last_backfill_bitwise,
@@ -4550,12 +4551,22 @@ void PG::share_new_log_entries(
       this);
     pinfo.last_update = info.last_update;
     pinfo.stats.stats_invalid = true;
-    MOSDPGUpdateLogMissing *m = new MOSDPGUpdateLogMissing(
-      entries,
-      spg_t(info.pgid.pgid, i->shard),
-      pg_whoami.shard,
-      get_osdmap()->get_epoch());
-    osd->send_message_osd_cluster(peer.osd, m, get_osdmap()->get_epoch());
+    if (get_osdmap()->test_flag(CEPH_OSDMAP_REQUIRE_JEWEL)) {
+      MOSDPGUpdateLogMissing *m = new MOSDPGUpdateLogMissing(
+	entries,
+	spg_t(info.pgid.pgid, i->shard),
+	pg_whoami.shard,
+	get_osdmap()->get_epoch());
+      osd->send_message_osd_cluster(peer.osd, m, get_osdmap()->get_epoch());
+    } else {
+      MOSDPGLog *m = new MOSDPGLog(
+	peer.shard, pg_whoami.shard,
+	info.last_update.epoch,
+	info);
+      m->log.log = entries;
+      m->log.tail = old_last_update;
+      m->log.head = info.last_update;
+    }
   }
 }
 

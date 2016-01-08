@@ -9440,11 +9440,13 @@ void ReplicatedPG::mark_all_unfound_lost(int what)
 	++v.version;
 	pg_log_entry_t e(pg_log_entry_t::LOST_DELETE, oid, v, m->second.need,
 		     0, osd_reqid_t(), mtime);
-	if (pool.info.require_rollback()) {
-	  e.mod_desc.try_rmobject(v.version);
-	} else {
-	  e.mod_desc.mark_unrollbackable();
-	}
+	if (get_osdmap()->test_flag(CEPH_OSDMAP_REQUIRE_JEWEL)) {
+	  if (pool.info.require_rollback()) {
+	    e.mod_desc.try_rmobject(v.version);
+	  } else {
+	    e.mod_desc.mark_unrollbackable();
+	  }
+	} // otherwise, just do what we used to do
 	dout(10) << e << dendl;
 	log_entries.push_back(e);
 
