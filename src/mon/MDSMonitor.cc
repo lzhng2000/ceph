@@ -1599,6 +1599,7 @@ int MDSMonitor::management_command(
     new_fs->mds_map.fs_name = fs->mds_map.fs_name;
     new_fs->mds_map.inc = fs->mds_map.inc;
     new_fs->mds_map.inline_data_enabled = fs->mds_map.inline_data_enabled;
+    new_fs->mds_map.compat = fsmap.compat;
 
     // Persist the new FSMap
     pending_fsmap.filesystems[new_fs->ns] = new_fs;
