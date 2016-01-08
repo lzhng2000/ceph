@@ -60,7 +60,6 @@
       */
      virtual void on_local_recover(
        const hobject_t &oid,
-       const object_stat_sum_t &stat_diff,
        const ObjectRecoveryInfo &recovery_info,
        ObjectContextRef obc,
        ObjectStore::Transaction *t
@@ -70,7 +69,10 @@
       * Called when transaction recovering oid is durable and
       * applied on all replicas
       */
-     virtual void on_global_recover(const hobject_t &oid) = 0;
+     virtual void on_global_recover(
+       const hobject_t &oid,
+       const object_stat_sum_t &stat_diff
+       ) = 0;
 
      /**
       * Called when peer is recovered
@@ -484,6 +486,11 @@
      ) = 0;
 
 
+   void try_stash(
+     const hobject_t &hoid,
+     version_t v,
+     ObjectStore::Transaction *t);
+
    void rollback(
      const hobject_t &hoid,
      const ObjectModDesc &desc,
@@ -503,6 +510,12 @@
 
    /// Unstash object to rollback stash
    void rollback_stash(
+     const hobject_t &hoid,
+     version_t old_version,
+     ObjectStore::Transaction *t);
+
+   /// Unstash object to rollback stash
+   void rollback_try_stash(
      const hobject_t &hoid,
      version_t old_version,
      ObjectStore::Transaction *t);
