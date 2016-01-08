@@ -64,6 +64,7 @@ bin_DEBUGPROGRAMS += ceph_bench_log
 
 check_SCRIPTS += \
 	test/ceph_objectstore_tool.py \
+	test/objectstore/test_fuse.sh \
 	test/test-ceph-helpers.sh \
 	test/cephtool-test-osd.sh \
 	test/cephtool-test-mon.sh \
