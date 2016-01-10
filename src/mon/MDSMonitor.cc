@@ -1593,14 +1593,20 @@ int MDSMonitor::management_command(
 
     // Carry forward what makes sense
     new_fs->ns = fs->ns;
+    new_fs->mds_map.inc = fs->mds_map.inc;
+    new_fs->mds_map.inline_data_enabled = fs->mds_map.inline_data_enabled;
+    new_fs->mds_map.max_mds = g_conf->max_mds;
     new_fs->mds_map.data_pools = fs->mds_map.data_pools;
     new_fs->mds_map.metadata_pool = fs->mds_map.metadata_pool;
     new_fs->mds_map.cas_pool = fs->mds_map.cas_pool;
     new_fs->mds_map.fs_name = fs->mds_map.fs_name;
-    new_fs->mds_map.inc = fs->mds_map.inc;
-    new_fs->mds_map.inline_data_enabled = fs->mds_map.inline_data_enabled;
+    new_fs->mds_map.max_file_size = g_conf->mds_max_file_size;
     new_fs->mds_map.compat = fsmap.compat;
-    new_fs->mds_map.max_mds = g_conf->max_mds;
+    new_fs->mds_map.created = ceph_clock_now(g_ceph_context);
+    new_fs->mds_map.modified = ceph_clock_now(g_ceph_context);
+    new_fs->mds_map.session_timeout = g_conf->mds_session_timeout;
+    new_fs->mds_map.session_autoclose = g_conf->mds_session_autoclose;
+    new_fs->mds_map.enabled = true;
 
     // Persist the new FSMap
     pending_fsmap.filesystems[new_fs->ns] = new_fs;
