@@ -92,8 +92,14 @@ endif(USE_NSS)
 
 set(GCOV_PREFIX_STRIP 4)
 
-get_git_head_revision(GIT_REFSPEC CEPH_GIT_VER)
-git_describe(CEPH_GIT_NICE_VER --always)
+option(ENABLE_GIT_VERSION "build Ceph with git version string" ON)
+if(${ENABLE_GIT_VERSION})
+  get_git_head_revision(GIT_REFSPEC CEPH_GIT_VER)
+  git_describe(CEPH_GIT_NICE_VER --always)
+else(${ENABLE_GIT_VERSION})
+  set(CEPH_GIT_VER "no_version")
+  set(CEPH_GIT_NICE_VER "Development")
+endif(${ENABLE_GIT_VERSION})
 
 # Python stuff
 find_package(PythonInterp 2 QUIET)
@@ -457,7 +463,7 @@ add_executable(ceph-objectstore-tool
   tools/RadosDump.cc
   $<TARGET_OBJECTS:common_util_obj>
   $<TARGET_OBJECTS:heap_profiler_objs>)
-target_link_libraries(ceph-objectstore-tool tcmalloc osd os global ${Boost_PROGRAM_OPTIONS_LIBRARY} dl)
+target_link_libraries(ceph-objectstore-tool tcmalloc osd os global ${Boost_PROGRAM_OPTIONS_LIBRARY} fuse dl)
 install(TARGETS ceph-objectstore-tool DESTINATION bin)
 
 
@@ -621,6 +627,7 @@ if(${HAVE_XFS})
     os/fs/XFS.cc)
 endif(${HAVE_XFS})
 set(libos_srcs
+  os/FuseStore.cc
   os/ObjectStore.cc
   os/Transaction.cc
   os/filestore/chain_xattr.cc
@@ -724,7 +731,7 @@ add_executable(ceph-osd ${ceph_osd_srcs}
   $<TARGET_OBJECTS:heap_profiler_objs>
   $<TARGET_OBJECTS:common_util_obj>)
 add_dependencies(ceph-osd erasure_code_plugins)
-target_link_libraries(ceph-osd osd os global ${BLKID_LIBRARIES} ${ALLOC_LIBS})
+target_link_libraries(ceph-osd osd os global ${BLKID_LIBRARIES} ${ALLOC_LIBS} fuse)
 install(TARGETS ceph-osd DESTINATION bin)
 
 # MDS
