@@ -480,6 +480,8 @@ void FSMap::sanity() const
       assert(mds_roles.at(j.first) == i.first);
       if (j.second.state != MDSMap::STATE_STANDBY_REPLAY) {
         assert(fs->mds_map.up.at(j.second.rank) == j.first);
+        assert(fs->mds_map.failed.count(j.second.rank) == 0);
+        assert(fs->mds_map.damaged.count(j.second.rank) == 0);
       }
     }
 
@@ -601,17 +603,17 @@ void FSMap::erase(mds_gid_t who, epoch_t blacklist_epoch)
   } else {
     auto fs = filesystems.at(mds_roles.at(who));
     const auto &info = fs->mds_map.mds_info.at(who);
-    if (info.state == MDSMap::STATE_CREATING) {
-      // If this gid didn't make it past CREATING, then forget
-      // the rank ever existed so that next time it's handed out
-      // to a gid it'll go back into CREATING.
-      fs->mds_map.in.erase(info.rank);
-    } else {
-      // Put this rank into the failed list so that the next available
-      // STANDBY will pick it up.
-      fs->mds_map.failed.insert(info.rank);
-    }
     if (info.state != MDSMap::STATE_STANDBY_REPLAY) {
+      if (info.state == MDSMap::STATE_CREATING) {
+        // If this gid didn't make it past CREATING, then forget
+        // the rank ever existed so that next time it's handed out
+        // to a gid it'll go back into CREATING.
+        fs->mds_map.in.erase(info.rank);
+      } else {
+        // Put this rank into the failed list so that the next available
+        // STANDBY will pick it up.
+        fs->mds_map.failed.insert(info.rank);
+      }
       assert(fs->mds_map.up.at(info.rank) == info.global_id);
       fs->mds_map.up.erase(info.rank);
     }
